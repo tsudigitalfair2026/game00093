@@ -1,0 +1,533 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>🐱🐼🐧 どうぶつならべパズルDX</title>
+
+<style>
+*{
+margin:0;
+padding:0;
+box-sizing:border-box;
+-webkit-tap-highlight-color:transparent;
+}
+
+html,body{
+width:100%;
+height:100%;
+overflow:hidden;
+font-family:sans-serif;
+background:#1e293b;
+color:#fff;
+touch-action:none;
+}
+
+.screen{
+display:none;
+width:100%;
+height:100%;
+padding:10px;
+}
+
+.active{
+display:flex;
+flex-direction:column;
+align-items:center;
+justify-content:center;
+}
+
+h1{
+text-align:center;
+margin-bottom:10px;
+}
+
+p{
+text-align:center;
+line-height:1.5;
+}
+
+button{
+border:none;
+border-radius:16px;
+background:#f59e0b;
+color:#fff;
+font-size:20px;
+font-weight:bold;
+padding:16px 28px;
+min-width:220px;
+margin-top:16px;
+}
+
+#gameScreen{
+display:none;
+flex-direction:column;
+height:100%;
+}
+
+.top{
+display:flex;
+justify-content:space-between;
+gap:8px;
+font-size:18px;
+font-weight:bold;
+padding:6px;
+}
+
+.panel{
+background:#334155;
+padding:8px;
+border-radius:12px;
+margin-bottom:6px;
+text-align:center;
+}
+
+.goalGrid{
+display:grid;
+grid-template-columns:repeat(4,1fr);
+gap:4px;
+max-width:220px;
+margin:auto;
+}
+
+.goalCell{
+background:#475569;
+border-radius:8px;
+padding:4px;
+font-size:24px;
+}
+
+#board{
+flex:1;
+display:grid;
+grid-template-columns:repeat(4,1fr);
+grid-template-rows:repeat(4,1fr);
+gap:6px;
+width:min(95vw,500px);
+aspect-ratio:1;
+margin:auto;
+}
+
+.cell{
+background:#475569;
+border-radius:14px;
+display:flex;
+justify-content:center;
+align-items:center;
+font-size:min(11vw,48px);
+user-select:none;
+}
+
+.selected{
+outline:4px solid #facc15;
+}
+
+#help{
+font-size:14px;
+text-align:center;
+color:#fde68a;
+margin-bottom:4px;
+}
+
+.rank{
+font-size:42px;
+font-weight:bold;
+margin:12px 0;
+}
+
+#comboView{
+color:#facc15;
+font-weight:bold;
+}
+
+.effect{
+position:fixed;
+left:50%;
+top:50%;
+transform:translate(-50%,-50%);
+padding:18px;
+border-radius:18px;
+font-size:28px;
+font-weight:bold;
+z-index:999;
+text-align:center;
+animation:pop .9s forwards;
+}
+
+@keyframes pop{
+0%{opacity:0;transform:translate(-50%,-50%) scale(.5);}
+20%{opacity:1;}
+100%{opacity:0;transform:translate(-50%,-60%) scale(1.3);}
+}
+</style>
+</head>
+
+<body>
+
+<div id="startScreen" class="screen active">
+
+<h1>🐱🐼🐧<br>どうぶつならべパズルDX</h1>
+
+<div class="panel">
+<b>完成図</b>
+<div class="goalGrid">
+<div class="goalCell">🐱</div><div class="goalCell">🐱</div><div class="goalCell">🐱</div><div class="goalCell">🐱</div>
+<div class="goalCell">🐱</div><div class="goalCell">🐱</div><div class="goalCell">🐱</div><div class="goalCell">🐱</div>
+<div class="goalCell">🐼</div><div class="goalCell">🐼</div><div class="goalCell">🐼</div><div class="goalCell">🐼</div>
+<div class="goalCell">🐧</div><div class="goalCell">🐧</div><div class="goalCell">🐧</div><div class="goalCell">🐧</div>
+</div>
+</div>
+
+<p>
+①どうぶつをタップ<br>
+②入れ替えたい相手をタップ<br>
+③完成図と同じにしよう！<br><br>
+🔥連続成功でコンボ！<br>
+👑王様ペンギンでボーナス！
+</p>
+
+<button id="startBtn">スタート</button>
+
+</div>
+
+<div id="gameScreen" class="screen">
+
+<div class="top">
+<div>⭐<span id="score">0</span></div>
+<div>⏰<span id="time">30</span></div>
+<div id="comboView">🔥0</div>
+</div>
+
+<div class="panel">
+<b>目標</b>
+<div class="goalGrid">
+<div class="goalCell">🐱</div><div class="goalCell">🐱</div><div class="goalCell">🐱</div><div class="goalCell">🐱</div>
+<div class="goalCell">🐱</div><div class="goalCell">🐱</div><div class="goalCell">🐱</div><div class="goalCell">🐱</div>
+<div class="goalCell">🐼</div><div class="goalCell">🐼</div><div class="goalCell">🐼</div><div class="goalCell">🐼</div>
+<div class="goalCell">🐧</div><div class="goalCell">🐧</div><div class="goalCell">🐧</div><div class="goalCell">🐧</div>
+</div>
+</div>
+
+<div id="help">
+どうぶつを2回タップして入れ替えよう
+</div>
+
+<div id="board"></div>
+
+</div>
+
+<div id="resultScreen" class="screen">
+
+<h1>結果発表</h1>
+
+<h2>最終スコア</h2>
+<div id="finalScore" style="font-size:52px;font-weight:bold;">0</div>
+
+<div id="rank" class="rank">C</div>
+
+<button id="restartBtn">もう一度遊ぶ</button>
+
+</div>
+
+<script>
+
+const goal=[
+"🐱","🐱","🐱","🐱",
+"🐱","🐱","🐱","🐱",
+"🐼","🐼","🐼","🐼",
+"🐧","🐧","🐧","🐧"
+];
+
+const startScreen=document.getElementById("startScreen");
+const gameScreen=document.getElementById("gameScreen");
+const resultScreen=document.getElementById("resultScreen");
+const board=document.getElementById("board");
+
+const scoreEl=document.getElementById("score");
+const timeEl=document.getElementById("time");
+const comboView=document.getElementById("comboView");
+
+let cells=[];
+let score=0;
+let time=30;
+let timer=null;
+let selected=null;
+let gameEnded=false;
+
+let combo=0;
+let kingIndex=-1;
+let kingActive=false;
+
+function shuffle(arr){
+let a=[...arr];
+
+for(let i=a.length-1;i>0;i--){
+let j=Math.floor(Math.random()*(i+1));
+[a[i],a[j]]=[a[j],a[i]];
+}
+
+if(JSON.stringify(a)===JSON.stringify(goal)){
+return shuffle(arr);
+}
+
+return a;
+}
+
+function countCorrect(){
+
+let n=0;
+
+for(let i=0;i<16;i++){
+
+let value=cells[i];
+
+if(value==="👑🐧"){
+value="🐧";
+}
+
+if(value===goal[i]){
+n++;
+}
+}
+
+return n;
+}
+
+function createBoard(){
+
+board.innerHTML="";
+cells=shuffle(goal);
+
+spawnKingPenguin();
+
+cells.forEach((animal,index)=>{
+
+const cell=document.createElement("div");
+cell.className="cell";
+cell.textContent=animal;
+
+cell.addEventListener("pointerdown",()=>{
+
+if(gameEnded)return;
+
+if(selected===null){
+
+selected=index;
+cell.classList.add("selected");
+
+}else{
+
+swap(selected,index);
+
+document.querySelectorAll(".cell")
+.forEach(c=>c.classList.remove("selected"));
+
+selected=null;
+}
+});
+
+board.appendChild(cell);
+});
+
+updateScore();
+}
+
+function spawnKingPenguin(){
+
+if(Math.random()<0.7){
+
+kingIndex=Math.floor(Math.random()*16);
+cells[kingIndex]="👑🐧";
+kingActive=true;
+
+}else{
+
+kingActive=false;
+}
+}
+
+function swap(a,b){
+
+const before=countCorrect();
+
+[cells[a],cells[b]]=[cells[b],cells[a]];
+
+renderBoard();
+
+const after=countCorrect();
+
+if(after>before){
+
+combo++;
+showCombo();
+
+}else{
+
+combo=0;
+}
+
+checkKingPenguin();
+updateScore();
+checkClear();
+}
+
+function renderBoard(){
+
+[...board.children].forEach((cell,i)=>{
+cell.textContent=cells[i];
+});
+}
+
+function updateScore(){
+
+let correct=countCorrect();
+
+score=(correct*10)+(combo*20);
+
+scoreEl.textContent=score;
+comboView.textContent="🔥"+combo;
+}
+
+function checkKingPenguin(){
+
+if(!kingActive)return;
+
+const row=Math.floor(kingIndex/4);
+
+if(row===3){
+
+score+=150;
+kingActive=false;
+
+showEffect(
+"👑🐧<br>王様ペンギン！<br>+150",
+"#f59e0b"
+);
+}
+}
+
+function showCombo(){
+
+showEffect(
+"🔥"+combo+" COMBO!",
+"#dc2626"
+);
+}
+
+function showEffect(text,color){
+
+const div=document.createElement("div");
+
+div.className="effect";
+div.style.background=color;
+div.innerHTML=text;
+
+document.body.appendChild(div);
+
+setTimeout(()=>{
+div.remove();
+},900);
+}
+
+function checkClear(){
+
+for(let i=0;i<16;i++){
+
+let value=cells[i];
+
+if(value==="👑🐧"){
+value="🐧";
+}
+
+if(value!==goal[i]){
+return;
+}
+}
+
+score+=200+(combo*50);
+
+endGame(true);
+}
+
+function startGame(){
+
+gameEnded=false;
+selected=null;
+score=0;
+combo=0;
+time=30;
+
+scoreEl.textContent="0";
+comboView.textContent="🔥0";
+timeEl.textContent="30";
+
+startScreen.classList.remove("active");
+resultScreen.classList.remove("active");
+
+gameScreen.style.display="flex";
+
+createBoard();
+
+clearInterval(timer);
+
+timer=setInterval(()=>{
+
+time--;
+timeEl.textContent=time;
+
+if(time<=0){
+
+endGame(false);
+}
+
+},1000);
+}
+
+function endGame(clear){
+
+if(gameEnded)return;
+
+gameEnded=true;
+
+clearInterval(timer);
+
+let finalScore=score;
+
+if(clear){
+
+finalScore+=time*5;
+}
+
+document.getElementById("finalScore").textContent=finalScore;
+
+let rank="🥉 C";
+
+if(finalScore>=500){
+rank="👑 SS";
+}
+else if(finalScore>=350){
+rank="🏆 S";
+}
+else if(finalScore>=250){
+rank="🥇 A";
+}
+else if(finalScore>=150){
+rank="🥈 B";
+}
+
+document.getElementById("rank").textContent=rank;
+
+gameScreen.style.display="none";
+resultScreen.classList.add("active");
+}
+
+document.getElementById("startBtn")
+.addEventListener("click",startGame);
+
+document.getElementById("restartBtn")
+.addEventListener("click",startGame);
+
+</script>
+
+</body>
+</html>
